@@ -3,12 +3,12 @@ import Score from "../Models/Score.Model.js";
 
 async function createEvent(req, res) {
     try {
-        const { name, description, date, location } = req.body;
+        const { name, description, date, location, category } = req.body;
         if (!name) {
             return res.status(400).json({ success: false, message: "Event name is required" });
         }
 
-        const event = await Event.create({ name, description, date, location });
+        const event = await Event.create({ name, description, date, location, category });
 
         return res.status(201).json({
             success: true,

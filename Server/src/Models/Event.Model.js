@@ -22,6 +22,11 @@ const eventSchema = new mongoose.Schema({
         type: String,
         enum: ["Scheduled", "Ongoing", "Completed"],
         default: "Scheduled"
+    },
+    category: {
+        type: String,
+        enum: ["Fine Arts", "Dance", "Singing", "Theatre"],
+        required: false
     }
 }, { timestamps: true });
 

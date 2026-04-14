@@ -112,11 +112,37 @@ export default function ScoringPage() {
                 disabled={eventsLoading}
                 helperText="Select an event to start scoring the teams"
               >
-                {events.map((event: any) => (
-                  <MenuItem key={event._id} value={event._id}>
-                    {event.name}
-                  </MenuItem>
-                ))}
+                {/* Dynamically create categorized menu items */}
+                {['Fine Arts', 'Dance', 'Singing', 'Theatre'].map((cat) => {
+                  const catEvents = events.filter((e: any) => (e.category === cat || (!e.category && cat === 'Others')));
+                  if (catEvents.length === 0) return null;
+                  
+                  return [
+                    <MenuItem key={`header-${cat}`} disabled sx={{ opacity: 1, fontWeight: 900, color: 'primary.main', bgcolor: 'action.hover', mt: 1 }}>
+                      {cat.toUpperCase()}
+                    </MenuItem>,
+                    ...catEvents.map((event: any) => (
+                      <MenuItem key={event._id} value={event._id} sx={{ pl: 4 }}>
+                        {event.name}
+                      </MenuItem>
+                    ))
+                  ];
+                })}
+                {/* Fallback for uncategorized events if any */}
+                {(() => {
+                  const uncategorized = events.filter((e: any) => !['Fine Arts', 'Dance', 'Singing', 'Theatre'].includes(e.category));
+                  if (uncategorized.length === 0) return null;
+                  return [
+                    <MenuItem key="header-others" disabled sx={{ opacity: 1, fontWeight: 900, color: 'text.secondary', bgcolor: 'action.hover', mt: 1 }}>
+                      OTHERS
+                    </MenuItem>,
+                    ...uncategorized.map((event: any) => (
+                      <MenuItem key={event._id} value={event._id} sx={{ pl: 4 }}>
+                        {event.name}
+                      </MenuItem>
+                    ))
+                  ];
+                })()}
               </TextField>
             </Paper>
           </Box>
