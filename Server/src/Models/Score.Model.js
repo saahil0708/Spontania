@@ -12,8 +12,8 @@ const scoreSchema = new mongoose.Schema({
         required: true
     },
     score: {
-        type: Number,
-        default: 0
+        type: String,
+        default: "0"
     },
     remarks: {
         type: String,

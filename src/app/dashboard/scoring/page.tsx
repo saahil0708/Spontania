@@ -39,7 +39,7 @@ export default function ScoringPage() {
   });
   const [addOrUpdateScore] = useAddOrUpdateScoreMutation();
 
-  const [scoresData, setScoresData] = useState<{ [key: string]: { score: number; remarks: string } }>({});
+  const [scoresData, setScoresData] = useState<{ [key: string]: string }>({});
 
   const events = eventsResponse?.data || [];
   const teams = teamsResponse?.data || [];
@@ -55,10 +55,9 @@ export default function ScoringPage() {
     if (existingScores && existingScores.length > 0) {
       const initialScores: any = {};
       existingScores.forEach((s: any) => {
-        initialScores[s.team._id] = {
-          score: s.score,
-          remarks: s.remarks || ''
-        };
+        if (s.team) {
+          initialScores[s.team._id] = s.score;
+        }
       });
       setScoresData(initialScores);
     } else if (scoresResponse?.success) {
@@ -67,40 +66,38 @@ export default function ScoringPage() {
   }, [scoresResponse?.data]);
 
   const handleScoreChange = (teamId: string, value: string) => {
-    const score = parseInt(value) || 0;
     setScoresData(prev => ({
       ...prev,
-      [teamId]: { ...prev[teamId], score }
+      [teamId]: value
     }));
   };
 
-  const handleRemarksChange = (teamId: string, value: string) => {
-    setScoresData(prev => ({
-      ...prev,
-      [teamId]: { ...prev[teamId], remarks: value }
-    }));
-  };
-
-  const handleSaveScore = async (teamId: string) => {
+  const handleSaveAllScores = async () => {
     if (!selectedEventId) return;
+    
+    const loadingToast = toast.loading('Saving all scores...');
     try {
-      const data = scoresData[teamId] || { score: 0, remarks: '' };
-      await addOrUpdateScore({
-        eventId: selectedEventId,
-        teamId,
-        score: data.score,
-        remarks: data.remarks
-      }).unwrap();
-      toast.success('Score saved successfully');
+      const savePromises = teams.map((team: any) => {
+        const score = scoresData[team._id] || "0";
+        return addOrUpdateScore({
+          eventId: selectedEventId,
+          teamId: team._id,
+          score,
+          remarks: "" // Empty remarks as they are no longer used
+        }).unwrap();
+      });
+
+      await Promise.all(savePromises);
+      toast.success('All scores saved successfully', { id: loadingToast });
       refetchScores();
     } catch (err: any) {
-      toast.error(err.data?.message || 'Failed to save score');
+      toast.error(err.data?.message || 'Failed to save some scores', { id: loadingToast });
     }
   };
 
   return (
     <ProtectedRoute>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pt: 6, pb: 12 }}>
         <Container maxWidth="lg">
           <Box sx={{ mb: 6 }}>
             <Typography variant="h4" color="primary" sx={{ mb: 4, fontWeight: 800 }}>Event Scoring</Typography>
@@ -117,7 +114,7 @@ export default function ScoringPage() {
               >
                 {events.map((event: any) => (
                   <MenuItem key={event._id} value={event._id}>
-                    {event.name} - {new Date(event.date).toLocaleDateString()}
+                    {event.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -134,88 +131,84 @@ export default function ScoringPage() {
               <CircularProgress />
             </Box>
           ) : (
-            <Grid container spacing={4}>
-              {teams.map((team: any) => {
-                const teamData = scoresData[team._id] || { score: 0, remarks: '' };
-                const bgColor = TEAM_COLORS[team.color] || '#ffffff';
-                const borderColor = TEAM_BORDER[team.color] || 'divider';
+            <>
+              <Grid container spacing={4}>
+                {teams.map((team: any) => {
+                  const score = scoresData[team._id] || "0";
+                  const bgColor = TEAM_COLORS[team.color] || '#ffffff';
+                  const borderColor = TEAM_BORDER[team.color] || 'divider';
 
-                return (
-                  <Grid item xs={12} md={6} key={team._id}>
-                    <Card sx={{ 
-                      borderRadius: 4, 
-                      borderLeft: `8px solid ${borderColor}`,
-                      bgcolor: bgColor,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                    }}>
-                      <CardContent sx={{ p: 4 }}>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-                          <Avatar sx={{ bgcolor: borderColor, width: 56, height: 56 }}>
-                            <StarIcon className="w-8 h-8 text-white" />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="h5" sx={{ fontWeight: 800 }}>{team.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{team.institution}</Typography>
-                          </Box>
-                        </Stack>
-                        
-                        <Divider sx={{ my: 2 }} />
+                  return (
+                    <Grid item xs={12} md={6} key={team._id}>
+                      <Card sx={{ 
+                        borderRadius: 4, 
+                        borderLeft: `8px solid ${borderColor}`,
+                        bgcolor: bgColor,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                      }}>
+                        <CardContent sx={{ p: 4 }}>
+                          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+                            <Avatar sx={{ bgcolor: borderColor, width: 56, height: 56 }}>
+                              <StarIcon className="w-8 h-8 text-white" />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="h5" sx={{ fontWeight: 800 }}>{team.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">{team.institution}</Typography>
+                            </Box>
+                          </Stack>
+                          
+                          <Divider sx={{ my: 2 }} />
 
-                        <Stack spacing={3}>
-                          <Box>
+                          <Box sx={{ mt: 2 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                               <TrophyIcon className="w-4 h-4 text-orange-500" /> Current Score
                             </Typography>
                             <TextField
-                              type="number"
                               fullWidth
-                              placeholder="Enter points"
-                              value={teamData.score}
+                              placeholder="Enter score (text or points)"
+                              value={score}
                               onChange={(e) => handleScoreChange(team._id, e.target.value)}
                               slotProps={{
                                 input: {
-                                  sx: { bgcolor: 'white', borderRadius: 2 }
+                                  sx: { bgcolor: 'white', borderRadius: 2, fontSize: '1.2rem', fontWeight: 700 }
                                 }
                               }}
                             />
                           </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )
+                })}
+              </Grid>
 
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <ChatBubbleBottomCenterTextIcon className="w-4 h-4 text-gray-500" /> Judge Remarks
-                            </Typography>
-                            <TextField
-                              fullWidth
-                              multiline
-                              rows={2}
-                              placeholder="Add feedback or notes..."
-                              value={teamData.remarks}
-                              onChange={(e) => handleRemarksChange(team._id, e.target.value)}
-                              slotProps={{
-                                input: {
-                                  sx: { bgcolor: 'white', borderRadius: 2 }
-                                }
-                              }}
-                            />
-                          </Box>
-
-                          <Button 
-                            variant="contained" 
-                            fullWidth
-                            onClick={() => handleSaveScore(team._id)}
-                            sx={{ 
-                              bgcolor: borderColor,
-                            }}
-                          >
-                            Update Score
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                )
-              })}
-            </Grid>
+              {/* Sticky bottom save button */}
+              <Box sx={{ 
+                position: 'fixed', 
+                bottom: 30, 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                zIndex: 1000,
+                width: 'auto',
+                minWidth: 200
+              }}>
+                <Button 
+                  variant="contained" 
+                  size="large"
+                  fullWidth
+                  onClick={handleSaveAllScores}
+                  sx={{ 
+                    borderRadius: 1, 
+                    py: 1.5, 
+                    fontSize: '1rem', 
+                    fontWeight: 800,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  SAVE ALL CHANGES
+                </Button>
+              </Box>
+            </>
           )}
         </Container>
       </Box>

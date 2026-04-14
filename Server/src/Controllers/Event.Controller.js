@@ -1,10 +1,11 @@
 import Event from "../Models/Event.Model.js";
+import Score from "../Models/Score.Model.js";
 
 async function createEvent(req, res) {
     try {
         const { name, description, date, location } = req.body;
-        if (!name || !date) {
-            return res.status(400).json({ success: false, message: "Name and date are required" });
+        if (!name) {
+            return res.status(400).json({ success: false, message: "Event name is required" });
         }
 
         const event = await Event.create({ name, description, date, location });
@@ -56,9 +57,13 @@ async function deleteEvent(req, res) {
         if (!deletedEvent) {
             return res.status(404).json({ success: false, message: "Event not found" });
         }
+
+        // Cleanup: Delete all scores associated with this event
+        await Score.deleteMany({ event: id });
+
         return res.status(200).json({
             success: true,
-            message: "Event deleted successfully"
+            message: "Event and associated scores deleted successfully"
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

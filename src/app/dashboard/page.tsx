@@ -77,10 +77,14 @@ export default function Dashboard() {
               </Paper>
             </Grid>
             <Grid item xs={12} md={4}>
-              <Paper sx={{ 
-                p: 4, borderRadius: 4, borderBottom: '4px solid', borderColor: 'success.main',
-                opacity: 0.7
-              }}>
+              <Paper 
+                onClick={() => router.push('/dashboard/standings')}
+                sx={{ 
+                  p: 4, borderRadius: 4, borderBottom: '4px solid', borderColor: 'success.main',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  '&:hover': { transform: 'translateY(-8px)', boxShadow: '0 12px 24px rgba(34, 197, 94, 0.2)' }
+                }}
+              >
                 <UsersIcon className="w-10 h-10 text-success-main mb-2" />
                 <Typography variant="h6" sx={{ fontWeight: 800 }}>Team Standings</Typography>
                 <Typography variant="body2" color="text.secondary">View leaderboard and podium.</Typography>

@@ -33,8 +33,6 @@ export default function EventsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    date: '',
-    location: ''
   });
 
   const events = response?.data || [];
@@ -45,12 +43,10 @@ export default function EventsPage() {
       setFormData({
         name: event.name,
         description: event.description || '',
-        date: format(new Date(event.date), "yyyy-MM-dd'T'HH:mm"),
-        location: event.location || ''
       });
     } else {
       setEditingEvent(null);
-      setFormData({ name: '', description: '', date: '', location: '' });
+      setFormData({ name: '', description: '' });
     }
     setOpen(true);
   };
@@ -89,7 +85,7 @@ export default function EventsPage() {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
               <Typography variant="h4" color="primary">Manage Events</Typography>
             </Stack>
             <Button 
@@ -136,16 +132,9 @@ export default function EventsPage() {
                         {event.description}
                       </Typography>
 
-                      <Stack spacing={1} sx={{ mt: 'auto' }}>
-                        <Stack direction="row" spacing={1} alignItems="center" color="text.secondary">
-                          <CalendarIcon className="w-4 h-4" />
-                          <Typography variant="caption">{format(new Date(event.date), 'PPP p')}</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center" color="text.secondary">
-                          <MapPinIcon className="w-4 h-4" />
-                          <Typography variant="caption">{event.location || 'Spontania Arena'}</Typography>
-                        </Stack>
-                      </Stack>
+                      <Box sx={{ mt: 'auto' }}>
+                        {/* Extras removed per user request */}
+                      </Box>
                     </Stack>
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3, gap: 1 }}>
@@ -192,24 +181,9 @@ export default function EventsPage() {
                     label="Description"
                     fullWidth
                     multiline
-                    rows={3}
+                    rows={4}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                  <TextField
-                    label="Date & Time"
-                    fullWidth
-                    required
-                    type="datetime-local"
-                    InputLabelProps={{ shrink: true }}
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  />
-                  <TextField
-                    label="Location"
-                    fullWidth
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   />
                 </Stack>
               </DialogContent>
