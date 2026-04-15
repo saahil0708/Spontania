@@ -82,11 +82,29 @@ export default function EventsPage() {
 
   return (
     <ProtectedRoute>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
-        <Container maxWidth="lg">
+      <Box sx={{ 
+        position: 'relative',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 30%, #fff7ed 70%, #f8fafc 100%)',
+        minHeight: '100vh', 
+        py: 6,
+        overflow: 'hidden'
+      }}>
+        {/* Dynamic Sporty Background Elements */}
+        <Box sx={{ 
+          position: 'absolute', top: -200, left: -100, width: 500, height: 1500, 
+          bgcolor: 'primary.main', opacity: 0.02, transform: 'rotate(25deg)', pointerEvents: 'none'
+        }} />
+        <Box sx={{ 
+          position: 'absolute', bottom: -100, right: -100, width: 300, height: 800, 
+          bgcolor: 'secondary.main', opacity: 0.03, transform: 'rotate(-20deg)', pointerEvents: 'none'
+        }} />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-              <Typography variant="h4" color="primary">Manage Events</Typography>
+              <Box sx={{ height: 80, display: 'flex', alignItems: 'center' }}>
+                <img src="/assets/spontania_logo.png" alt="Spontania Logo" style={{ height: '100%', objectFit: 'contain' }} />
+              </Box>
+              <Typography variant="h4" color="primary" sx={{ borderLeft: '2px solid', borderColor: 'divider', pl: 2 }}>Manage Events</Typography>
             </Stack>
             <Button 
               variant="contained" 

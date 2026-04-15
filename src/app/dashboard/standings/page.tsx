@@ -40,19 +40,30 @@ export default function StandingsPage() {
 
   return (
     <ProtectedRoute>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 2 }}>
-        <Container maxWidth="xl">
+      <Box sx={{ 
+        width: '100%', 
+        height: '100vh', 
+        position: 'relative', 
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 30%, #fff7ed 70%, #f8fafc 100%)'
+      }}>
+        {/* Dynamic Sporty Background Elements are mostly hidden by the dashboard, but keeping it unified */}
+        <Box sx={{ 
+          position: 'absolute', top: -200, left: -100, width: 500, height: 1500, 
+          bgcolor: 'primary.main', opacity: 0.02, transform: 'rotate(25deg)', pointerEvents: 'none'
+        }} />
+        <Box sx={{ 
+          position: 'absolute', bottom: -100, right: -100, width: 300, height: 800, 
+          bgcolor: 'secondary.main', opacity: 0.03, transform: 'rotate(-20deg)', pointerEvents: 'none'
+        }} />
+        <Container maxWidth="xl" sx={{ height: '100%', display: 'flex', flexDirection: 'column', py: 0 }}>
           {/* New Symmetric Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, px: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, px: 2 }}>
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-              <Box sx={{ p: 1, bgcolor: 'primary.main', borderRadius: 2, display: 'flex' }}>
-                <TrophyIcon className="w-8 h-8 text-white" />
-              </Box>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>SPONTANIA</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Live Competition Analytics
-                </Typography>
+              <Box sx={{ height: 80, display: 'flex', alignItems: 'center' }}>
+                <img src="/assets/spontania_logo.png" alt="Spontania Logo" style={{ height: '100%', objectFit: 'contain' }} />
               </Box>
             </Stack>
 
@@ -67,7 +78,7 @@ export default function StandingsPage() {
           </Box>
 
           {/* Main Dashboard - No Tabs */}
-          <Box>
+          <Box sx={{ flexGrow: 1, minHeight: 0 }}>
               <StandingsDashboard teams={teams} allScores={allScores} events={events} />
           </Box>
         </Container>

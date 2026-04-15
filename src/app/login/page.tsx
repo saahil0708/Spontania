@@ -89,13 +89,8 @@ export default function LoginPage() {
         <Fade in timeout={800}>
           <Box sx={{ width: '100%', maxWidth: 400 }}>
             {/* Logo Section */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 6 }}>
-              <Box sx={{ p: 1, bgcolor: 'primary.main', borderRadius: 2, display: 'flex' }}>
-                <TrophyIcon className="w-8 h-8 text-white" />
-              </Box>
-              <Typography variant="h4" color="primary" sx={{ letterSpacing: -1, fontWeight: 900 }}>
-                SPONTANIA
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 6, height: 80 }}>
+              <img src="/assets/spontania_logo.png" alt="Spontania Logo" style={{ height: '100%', objectFit: 'contain' }} />
             </Box>
 
             <Typography variant="h2" gutterBottom sx={{ mb: 1, textTransform: 'uppercase' }}>

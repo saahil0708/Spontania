@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip as RechartsTooltip, Legend, Cell
+  Tooltip as RechartsTooltip, Legend, Cell, LabelList
 } from 'recharts';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import { 
@@ -63,7 +63,7 @@ const pulseGlow = keyframes`
   100% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
 `;
 
-const Counter = ({ value }: { value: number }) => {
+const Counter = ({ value, fontSize = 10 }: { value: number, fontSize?: number }) => {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const controls = animate(count, value, {
@@ -72,7 +72,23 @@ const Counter = ({ value }: { value: number }) => {
     });
     return () => controls.stop();
   }, [value]);
-  return <>{count.toLocaleString()}</>;
+  return <tspan style={{ fontSize, fontWeight: 700 }}>{count}</tspan>;
+};
+
+const CountingLabel = (props: any) => {
+  const { x, y, width, height, value, theme } = props;
+  if (value === 0) return null;
+  return (
+    <text 
+      x={x + width + 8} 
+      y={y + height / 2} 
+      dy={5} 
+      fill={theme.palette.text.primary} 
+      style={{ fontWeight: 900 }}
+    >
+      <Counter value={value} fontSize={14} />
+    </text>
+  );
 };
 
 export default function StandingsDashboard({ teams, allScores, events }: Props) {
@@ -88,15 +104,15 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
   useEffect(() => {
     const interval = 50; // Update progress every 50ms
     const step = (interval / CYCLE_TIME) * 100;
+    let currentProgress = 0;
     
     const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          setCategoryIndex((idx) => (idx + 1) % CATEGORIES.length);
-          return 0;
-        }
-        return prev + step;
-      });
+      currentProgress += step;
+      if (currentProgress >= 100) {
+        currentProgress = 0;
+        setCategoryIndex((idx) => (idx + 1) % CATEGORIES.length);
+      }
+      setProgress(currentProgress);
     }, interval);
 
     return () => clearInterval(timer);
@@ -127,26 +143,84 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
 
   // 3. Category Data
   const categoryData = useMemo(() => {
-    const eventsInCategory = events.filter(e => {
+    // Expected events for this category
+    const expectedEventNames = Object.keys(EVENT_CATEGORY_MAP).filter(
+      key => EVENT_CATEGORY_MAP[key].trim().toLowerCase() === currentCategory?.trim().toLowerCase()
+    );
+
+    const dbEventsInCategory = events.filter(e => {
         const eventName = e.name?.trim();
         const cat = e.category || EVENT_CATEGORY_MAP[eventName] || "General";
         return cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
     });
 
-    return eventsInCategory.map(evt => {
+    const mergedEvents = expectedEventNames.map(name => {
+         const found = dbEventsInCategory.find(e => e.name?.trim() === name);
+         return found || { _id: `dummy-${name}`, name };
+    });
+
+    dbEventsInCategory.forEach(e => {
+         if (!expectedEventNames.includes(e.name?.trim())) {
+              mergedEvents.push(e);
+         }
+    });
+
+    return mergedEvents.map(evt => {
       const dataPoint: any = { eventName: evt.name };
       teams.forEach(team => {
-        const scoreObj = allScores.find(s => s.team?._id === team._id && s.event?._id === evt._id);
+        const scoreObj = allScores.find(s => s.team?._id === team._id && (s.event?._id === evt._id || s.event?.name === evt.name));
         dataPoint[team.name] = parseFloat(scoreObj?.score || '0');
       });
       return dataPoint;
     }).slice(0, 7); 
   }, [events, allScores, currentCategory, teams]);
 
+  const maxScore = useMemo(() => {
+    let max = 0;
+    categoryData.forEach(entry => {
+      teams.forEach(team => {
+        const val = entry[team.name];
+        if (typeof val === 'number' && val > max) {
+          max = val;
+        }
+      });
+    });
+    return max;
+  }, [categoryData, teams]);
+
   const Icon = CATEGORY_ICONS[currentCategory] || StarIcon;
 
   return (
-    <Box sx={{ width: '100%', minHeight: '90vh', position: 'relative' }}>
+    <Box sx={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative', 
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <style>{`
+        @keyframes flickerHighest {
+          0%, 100% { filter: brightness(1) drop-shadow(0 0 8px rgba(255,255,255,0.3)) !important; }
+          50% { filter: brightness(1.5) drop-shadow(0 0 20px rgba(255,255,255,0.8)) !important; }
+        }
+        @keyframes pulseLive {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .highest-bar {
+          animation: flickerHighest 0.8s infinite alternate ease-in-out;
+        }
+        .live-dot {
+          width: 8px;
+          height: 8px;
+          background-color: #ef4444;
+          border-radius: 50%;
+          animation: pulseLive 1.5s infinite ease-in-out;
+          box-shadow: 0 0 10px #ef4444;
+        }
+      `}</style>
       {/* Background Decorative Mesh */}
       <Box sx={{ 
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1,
@@ -165,8 +239,8 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         >
           <Paper sx={{ 
-            p: 5, borderRadius: 10, bgcolor: 'background.paper', position: 'relative', overflow: 'hidden',
-            border: '1px solid', borderColor: 'divider', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.08)'
+            p: 3, borderRadius: 10, bgcolor: 'transparent', position: 'relative', overflow: 'hidden',
+            boxShadow: 'none'
           }}>
             {/* Cycle Progress Bar */}
             <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
@@ -184,31 +258,42 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
             </Box>
 
             {/* Header */}
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 6, pt: 1 }}>
-              <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2, pt: 0.5 }}>
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <Box sx={{ 
-                  p: 2.5, bgcolor: CATEGORY_COLORS[currentCategory], borderRadius: 6, color: 'white',
-                  boxShadow: `0 20px 40px ${CATEGORY_COLORS[currentCategory]}44`
+                  p: 1.2, bgcolor: CATEGORY_COLORS[currentCategory], borderRadius: 3, color: 'white',
+                  boxShadow: `0 8px 16px ${CATEGORY_COLORS[currentCategory]}33`
                 }}>
-                  <Icon style={{ width: 44, height: 44 }} />
+                  <Icon style={{ width: 24, height: 24 }} />
                 </Box>
                 <Box>
-                  <Typography variant="h2" sx={{ fontWeight: 950, letterSpacing: '-0.04em', lineHeight: 1 }}>{currentCategory}</Typography>
-                  <Typography variant="h6" sx={{ opacity: 0.6, fontWeight: 700, mt: 1 }}>Competition Dynamics • Round Analytics</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 950, letterSpacing: '-0.02em', lineHeight: 1 }}>{currentCategory}</Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.6, fontWeight: 700, display: 'block' }}>Competition Dynamics • Round Analytics</Typography>
                 </Box>
               </Stack>
               
               <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: CATEGORY_COLORS[currentCategory] }}>SECTION {categoryIndex + 1}/{CATEGORIES.length}</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 800, opacity: 0.5 }}>AUTO-CYCLING ACTIVE</Typography>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.2, justifyContent: 'flex-end' }}>
+                  <Box className="live-dot" />
+                  <Typography variant="caption" sx={{ fontWeight: 900, color: 'error.main', letterSpacing: 1.2, fontSize: '0.65rem' }}>LIVE BROADCAST</Typography>
+                </Stack>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: CATEGORY_COLORS[currentCategory], lineHeight: 1 }}>SECTION {categoryIndex + 1}/{CATEGORIES.length}</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 800, opacity: 0.5, display: 'block', fontSize: '0.7rem' }}>AUTO-CYCLING ACTIVE</Typography>
               </Box>
             </Stack>
 
             {/* BAR CHART */}
-            <Box sx={{ height: 500, width: '100%', mt: 2 }}>
+            <Box sx={{ height: 'calc(100vh - 320px)', width: '100%', mt: 0 }}>
               {categoryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={categoryData} layout="vertical" margin={{ left: 150, right: 60 }} barSize={12} barGap={10}>
+                  <BarChart 
+                    data={categoryData} 
+                    layout="vertical" 
+                    margin={{ left: 130, right: 60, top: 10, bottom: 10 }} 
+                    barSize={8} 
+                    barGap={2}
+                    barCategoryGap="15%"
+                  >
                     <defs>
                       {teams.map(team => (
                         <linearGradient key={`grad-${team._id}`} id={`grad-${team._id}`} x1="0" y1="0" x2="1" y2="0">
@@ -217,32 +302,55 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                         </linearGradient>
                       ))}
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={theme.palette.divider} opacity={0.5} />
+                    <CartesianGrid strokeDasharray="2 2" horizontal={false} stroke={theme.palette.divider} opacity={0.3} />
                     <XAxis 
                       type="number" 
                       domain={[0, 20]} 
                       ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]}
-                      tick={{ fontWeight: 800, fill: theme.palette.text.secondary, fontSize: 12 }}
-                      axisLine={{ stroke: theme.palette.divider }}
+                      tick={{ fontWeight: 800, fill: theme.palette.text.secondary, fontSize: 13 }}
+                      axisLine={{ stroke: theme.palette.divider, opacity: 0.5 }}
                       tickLine={false}
                     />
                     <YAxis 
                       dataKey="eventName" type="category" 
                       tick={{ fontWeight: 900, fill: theme.palette.text.primary, fontSize: 16 }}
-                      axisLine={false} tickLine={false} width={150}
+                      axisLine={false} tickLine={false} width={130}
                     />
                     <RechartsTooltip 
-                      cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-                      contentStyle={{ borderRadius: 24, border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: 20 }}
+                      cursor={{ fill: 'rgba(0,0,0,0.03)' }}
+                      contentStyle={{ 
+                        borderRadius: 16, border: '1px solid rgba(255,255,255,0.4)', 
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: 16, 
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(12px)'
+                      }}
+                      itemStyle={{ fontWeight: 800, fontSize: 13, padding: '4px 0' }}
+                      labelStyle={{ fontWeight: 900, fontSize: 12, opacity: 0.5, marginBottom: 8, textTransform: 'uppercase' }}
                     />
                     {teams.map((team) => (
                       <Bar 
                         key={team._id} dataKey={team.name} 
-                        fill={`url(#grad-${team._id})`} 
                         radius={[0, 20, 20, 0]}
                         animationDuration={1500}
-                        style={{ filter: team.name === 'White' || team.color === 'white' ? 'drop-shadow(0 0 2px rgba(0,0,0,0.2))' : 'none' }}
-                      />
+                      >
+                        {categoryData.map((entry: any, index: number) => {
+                          const isHighest = entry[team.name] === maxScore && maxScore > 0;
+                          return (
+                            <Cell 
+                              key={`cell-${index}`}
+                              fill={`url(#grad-${team._id})`}
+                              className={isHighest ? 'highest-bar' : ''}
+                              style={{ 
+                                filter: team.name === 'White' || team.color === 'white' ? 'drop-shadow(0 0 2px rgba(0,0,0,0.2))' : 'none'
+                              }}
+                            />
+                          );
+                        })}
+                        {/* Numeric score label at the end of the bar with counting animation */}
+                        <LabelList 
+                          dataKey={team.name} 
+                          content={<CountingLabel theme={theme} />}
+                        />
+                      </Bar>
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
@@ -258,9 +366,21 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
         </motion.div>
       </AnimatePresence>
 
-      <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 4, fontWeight: 800, opacity: 0.3, letterSpacing: 5 }}>
-        SPONTANIA LIVE DATA PLATFORM • 2026
-      </Typography>
+      <Box sx={{ mt: 'auto', pb: 2, zIndex: 10 }}>
+        <Typography 
+          sx={{ 
+            display: 'block', 
+            textAlign: 'center', 
+            fontWeight: 900, 
+            letterSpacing: 4, 
+            color: '#1e293b',
+            fontSize: '0.85rem',
+            textTransform: 'uppercase'
+          }}
+        >
+          SPONTANIA LIVE DATA PLATFORM • 2026
+        </Typography>
+      </Box>
     </Box>
   );
 }
