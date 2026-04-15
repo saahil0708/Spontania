@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Box, Typography, Container, Grid, Paper, Stack, 
@@ -28,7 +28,7 @@ const TEAM_BORDER: { [key: string]: string } = {
   green: '#22c55e'
 };
 
-export default function ScoringPage() {
+function ScoringContent() {
   const searchParams = useSearchParams();
   const eventIdFromQuery = searchParams.get('eventId');
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -165,7 +165,7 @@ export default function ScoringPage() {
                   const borderColor = TEAM_BORDER[team.color] || 'divider';
 
                   return (
-                    <Grid item xs={12} md={6} key={team._id}>
+                    <Grid size={{ xs: 12, md: 6 }} key={team._id}>
                       <Card sx={{ 
                         borderRadius: 4, 
                         borderLeft: `8px solid ${borderColor}`,
@@ -173,7 +173,7 @@ export default function ScoringPage() {
                         boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
                       }}>
                         <CardContent sx={{ p: 4 }}>
-                          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+                          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
                             <Avatar sx={{ bgcolor: borderColor, width: 56, height: 56 }}>
                               <StarIcon className="w-8 h-8 text-white" />
                             </Avatar>
@@ -239,5 +239,17 @@ export default function ScoringPage() {
         </Container>
       </Box>
     </ProtectedRoute>
+  );
+}
+
+export default function ScoringPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <ScoringContent />
+    </Suspense>
   );
 }

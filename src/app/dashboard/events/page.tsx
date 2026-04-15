@@ -105,7 +105,7 @@ export default function EventsPage() {
           ) : (
             <Grid container spacing={3}>
               {events.map((event: any) => (
-                <Grid item xs={12} md={6} lg={4} key={event._id}>
+                <Grid size={{ xs: 12, md: 6, lg: 4 }} key={event._id}>
                   <Paper sx={{ 
                     p: 3, 
                     borderRadius: 4, 
@@ -140,7 +140,7 @@ export default function EventsPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3, gap: 1 }}>
                       <Button 
                         size="small" 
-                        variant="soft" 
+                        variant="outlined" 
                         color="secondary"
                         onClick={() => router.push(`/dashboard/scoring?eventId=${event._id}`)}
                         sx={{ fontSize: '0.75rem', fontWeight: 800 }}

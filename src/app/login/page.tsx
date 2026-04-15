@@ -79,7 +79,7 @@ export default function LoginPage() {
       }} />
 
       {/* Left Column: Form */}
-      <Grid item xs={12} md={5} lg={4} sx={{ 
+      <Grid size={{ xs: 12, md: 5, lg: 4 }} sx={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center', 
@@ -192,7 +192,7 @@ export default function LoginPage() {
       </Grid>
 
       {/* Right Column: Sporty Graphic */}
-      <Grid item md={7} lg={8} 
+      <Grid size={{ md: 7, lg: 8 }} 
         sx={{ 
           display: { xs: 'none', md: 'flex' },
           alignItems: 'center',

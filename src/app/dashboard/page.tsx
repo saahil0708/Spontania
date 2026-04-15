@@ -48,7 +48,7 @@ export default function Dashboard() {
           </Typography>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper 
                 onClick={() => router.push('/dashboard/events')}
                 sx={{ 
@@ -62,7 +62,7 @@ export default function Dashboard() {
                 <Typography variant="body2" color="text.secondary">Create and manage competitions.</Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper 
                 onClick={() => router.push('/dashboard/scoring')}
                 sx={{ 
@@ -76,7 +76,7 @@ export default function Dashboard() {
                 <Typography variant="body2" color="text.secondary">Assign points to teams in real-time.</Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper 
                 onClick={() => router.push('/dashboard/standings')}
                 sx={{ 

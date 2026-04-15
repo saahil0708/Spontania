@@ -44,7 +44,7 @@ export default function StandingsPage() {
         <Container maxWidth="xl">
           {/* New Symmetric Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, px: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
               <Box sx={{ p: 1, bgcolor: 'primary.main', borderRadius: 2, display: 'flex' }}>
                 <TrophyIcon className="w-8 h-8 text-white" />
               </Box>

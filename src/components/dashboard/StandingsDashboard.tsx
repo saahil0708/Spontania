@@ -128,8 +128,9 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
   // 3. Category Data
   const categoryData = useMemo(() => {
     const eventsInCategory = events.filter(e => {
-        const cat = e.category || EVENT_CATEGORY_MAP[e.name] || "General";
-        return cat === currentCategory;
+        const eventName = e.name?.trim();
+        const cat = e.category || EVENT_CATEGORY_MAP[eventName] || "General";
+        return cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
     });
 
     return eventsInCategory.map(evt => {
@@ -154,95 +155,14 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
         pointerEvents: 'none'
       }} />
 
-      {/* TOP PANEL */}
-      <Grid container spacing={4} sx={{ mb: 6 }}>
-        <Grid item xs={12} lg={5}>
-          <Paper sx={{ 
-            p: 4, borderRadius: 8, overflow: 'hidden', position: 'relative',
-            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, #1e293b 100%)`,
-            color: 'white', border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.4)'
-          }}>
-            <Box sx={{ position: 'absolute', right: -30, top: -30, opacity: 0.1 }}>
-              <TrophyIcon style={{ width: 220, height: 220 }} />
-            </Box>
-            
-            <Stack direction="row" spacing={3} alignItems="center">
-              <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 4 }}>
-                <Avatar sx={{ 
-                  width: 90, height: 90, 
-                  bgcolor: TEAM_COLOR_MAP[leader?.color]?.main || 'white', 
-                  border: '5px solid rgba(255,255,255,0.1)',
-                  boxShadow: `0 0 30px ${TEAM_COLOR_MAP[leader?.color]?.main}44`,
-                  animation: `${pulseGlow} 3s infinite ease-in-out`
-                }}>
-                  <TrophyIcon style={{ width: 45, height: 45, color: leader?.color === 'white' ? '#1e293b' : 'white' }} />
-                </Avatar>
-              </motion.div>
-              
-              <Box>
-                <Typography variant="overline" sx={{ fontWeight: 900, letterSpacing: 3, color: 'primary.light' }}>CURRENT LEADER</Typography>
-                <Typography variant="h2" sx={{ fontWeight: 950, textTransform: 'uppercase', letterSpacing: '-0.02em', mb: -0.5 }}>
-                  {leader?.name?.split(' ')[0] || "---"}
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, opacity: 0.9 }}>
-                  <Counter value={leader?.total || 0} /> <span style={{ fontSize: '1rem', fontWeight: 600 }}>CUMULATIVE POINTS</span>
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} lg={7}>
-          <Paper sx={{ 
-            p: 4, borderRadius: 8, height: '100%', bgcolor: 'background.paper',
-            border: '1px solid', borderColor: 'divider', boxShadow: '0 10px 20px -5px rgba(0,0,0,0.05)'
-          }}>
-            <Stack direction="row" spacing={2} sx={{ height: '100%' }} alignItems="center" justifyContent="space-around">
-              {globalStandings.slice(0, 4).map((team, index) => {
-                const prevRank = prevStandings[team.id] ?? index;
-                const trend = prevRank - index; 
-                return (
-                  <Stack key={team.id} alignItems="center" spacing={1.5}>
-                    <Box sx={{ position: 'relative' }}>
-                      <Avatar 
-                        sx={{ 
-                          width: 68, height: 68, bgcolor: TEAM_COLOR_MAP[team.color].main, 
-                          border: '4px solid ivory', boxShadow: '0 12px 24px rgba(0,0,0,0.08)' 
-                        }}
-                      >
-                         <Typography sx={{ fontWeight: 950, color: team.color === 'white' ? 'black' : 'white', fontSize: '1.2rem' }}>{index + 1}</Typography>
-                      </Avatar>
-                      {trend !== 0 && (
-                        <Box sx={{ 
-                          position: 'absolute', right: -6, top: -6, 
-                          bgcolor: trend > 0 ? '#10b981' : '#ef4444', border: '2px solid white',
-                          borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' 
-                        }}>
-                          {trend > 0 ? <ChevronUpIcon style={{ width: 16, height: 16, color: 'white' }} /> : <ChevronDownIcon style={{ width: 16, height: 16, color: 'white' }} />}
-                        </Box>
-                      )}
-                    </Box>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>{team.name}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800 }}>{team.total} PTS</Typography>
-                    </Box>
-                  </Stack>
-                );
-              })}
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
-
       {/* MAIN DATA MONITOR */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentCategory}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         >
           <Paper sx={{ 
             p: 5, borderRadius: 10, bgcolor: 'background.paper', position: 'relative', overflow: 'hidden',
@@ -255,14 +175,17 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                 value={progress} 
                 sx={{ 
                   height: 6, bgcolor: 'transparent',
-                  '& .MuiLinearProgress-bar': { bgcolor: CATEGORY_COLORS[currentCategory], transition: 'none' }
+                  '& .MuiLinearProgress-bar': { 
+                    bgcolor: CATEGORY_COLORS[currentCategory], 
+                    transition: 'transform 0.05s linear'
+                  }
                 }} 
               />
             </Box>
 
             {/* Header */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 6, pt: 1 }}>
-              <Stack direction="row" spacing={3} alignItems="center">
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 6, pt: 1 }}>
+              <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
                 <Box sx={{ 
                   p: 2.5, bgcolor: CATEGORY_COLORS[currentCategory], borderRadius: 6, color: 'white',
                   boxShadow: `0 20px 40px ${CATEGORY_COLORS[currentCategory]}44`
@@ -294,8 +217,15 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                         </linearGradient>
                       ))}
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
-                    <XAxis type="number" hide domain={[0, 10]} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={theme.palette.divider} opacity={0.5} />
+                    <XAxis 
+                      type="number" 
+                      domain={[0, 20]} 
+                      ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]}
+                      tick={{ fontWeight: 800, fill: theme.palette.text.secondary, fontSize: 12 }}
+                      axisLine={{ stroke: theme.palette.divider }}
+                      tickLine={false}
+                    />
                     <YAxis 
                       dataKey="eventName" type="category" 
                       tick={{ fontWeight: 900, fill: theme.palette.text.primary, fontSize: 16 }}
@@ -317,7 +247,7 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <Stack alignItems="center" justifyContent="center" sx={{ height: '100%', opacity: 0.4 }}>
+                <Stack sx={{ alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.4 }}>
                   <BoltIcon style={{ width: 80, height: 80, marginBottom: 16 }} />
                   <Typography variant="h5" sx={{ fontWeight: 900 }}>Wait for Data Refresh</Typography>
                   <Typography variant="body1">System is monitoring {currentCategory} for scores...</Typography>
