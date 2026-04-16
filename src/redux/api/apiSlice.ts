@@ -12,6 +12,6 @@ export const apiSlice = createApi({
     },
     credentials: 'include', // Important for HttpOnly cookies
   }),
-  tagTypes: ['Admin', 'Event', 'Team', 'Score'],
+  tagTypes: ['Admin', 'Event', 'Team', 'Score', 'Winner'],
   endpoints: (builder) => ({}),
 });

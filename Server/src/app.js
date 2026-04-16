@@ -4,6 +4,7 @@ import adminRoutes from "./Routes/Admin.Routes.js";
 import eventRoutes from "./Routes/Event.Routes.js";
 import teamRoutes from "./Routes/Team.Routes.js";
 import scoreRoutes from "./Routes/Score.Routes.js";
+import winnerRoutes from "./Routes/Winner.Routes.js";
 import cors from 'cors';
 
 const app = express();
@@ -22,5 +23,6 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/events", eventRoutes);
 app.use("/api/v1/teams", teamRoutes);
 app.use("/api/v1/scores", scoreRoutes);
+app.use("/api/v1/winners", winnerRoutes);
 
 export default app;

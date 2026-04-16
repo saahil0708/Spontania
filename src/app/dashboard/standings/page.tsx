@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { useGetTeamsQuery } from '@/redux/features/teamsApi';
 import { useGetAllScoresQuery } from '@/redux/features/scoresApi';
 import { useGetEventsQuery } from '@/redux/features/eventsApi';
+import { useGetWinnersQuery } from '@/redux/features/winnersApi';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StandingsDashboard from '@/components/dashboard/StandingsDashboard';
 
@@ -17,12 +18,18 @@ export default function StandingsPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   const { data: teamsResponse, isLoading: teamsLoading } = useGetTeamsQuery();
-  const { data: scoresResponse, isLoading: scoresLoading } = useGetAllScoresQuery();
+  const { data: scoresResponse, isLoading: scoresLoading } = useGetAllScoresQuery(undefined, {
+    pollingInterval: 3000,
+  });
   const { data: eventsResponse, isLoading: eventsLoading } = useGetEventsQuery();
+  const { data: winnersResponse } = useGetWinnersQuery(undefined, {
+    pollingInterval: 3000,
+  });
 
   const teams = teamsResponse?.data || [];
   const allScores = scoresResponse?.data || [];
   const events = eventsResponse?.data || [];
+  const winners = winnersResponse?.data || [];
 
   // Live Clock Update
   useEffect(() => {
@@ -79,7 +86,7 @@ export default function StandingsPage() {
 
           {/* Main Dashboard - No Tabs */}
           <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <StandingsDashboard teams={teams} allScores={allScores} events={events} />
+              <StandingsDashboard teams={teams} allScores={allScores} events={events} winners={winners} />
           </Box>
         </Container>
       </Box>

@@ -21,6 +21,8 @@ import {
   BoltIcon
 } from '@heroicons/react/24/solid';
 import { CATEGORIES, CATEGORY_COLORS, EVENT_CATEGORY_MAP } from '@/constants/CategoryMapping';
+import WinnerCelebration from './WinnerCelebration';
+import { useAnnounceWinnerMutation } from '@/redux/features/winnersApi';
 
 // --- Types ---
 interface Team {
@@ -40,6 +42,7 @@ interface Props {
   teams: Team[];
   allScores: Score[];
   events: any[];
+  winners?: any[];
 }
 
 // --- Styles & Animations ---
@@ -91,20 +94,41 @@ const CountingLabel = (props: any) => {
   );
 };
 
-export default function StandingsDashboard({ teams, allScores, events }: Props) {
+export default function StandingsDashboard({ teams, allScores, events, winners }: Props) {
   const theme = useTheme();
   const [categoryIndex, setCategoryIndex] = useState(0);
   const [prevStandings, setPrevStandings] = useState<Record<string, number>>({});
   const [progress, setProgress] = useState(0);
-  const CYCLE_TIME = 8000; // 8 seconds
+  const [activeCelebration, setActiveCelebration] = useState<any>(null);
+  const [announceWinner] = useAnnounceWinnerMutation();
+  const CYCLE_TIME = 8000; 
 
   const currentCategory = CATEGORIES[categoryIndex];
 
+  // Logic to detect new winners
+  useEffect(() => {
+    if (winners && winners.length > 0) {
+      const pendingWinner = winners.find(w => !w.isAnnounced);
+      if (pendingWinner && (!activeCelebration || activeCelebration._id !== pendingWinner._id)) {
+        setActiveCelebration(pendingWinner);
+      }
+    }
+  }, [winners, activeCelebration]);
+
+  const handleCelebrationComplete = async () => {
+    if (activeCelebration) {
+      await announceWinner(activeCelebration._id);
+      setActiveCelebration(null);
+    }
+  };
+
   // 1. Progress & Cycle Logic
   useEffect(() => {
-    const interval = 50; // Update progress every 50ms
+    if (activeCelebration) return; // Pause cycle during celebration
+
+    const interval = 50; 
     const step = (interval / CYCLE_TIME) * 100;
-    let currentProgress = 0;
+    let currentProgress = progress;
     
     const timer = setInterval(() => {
       currentProgress += step;
@@ -116,7 +140,7 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
     }, interval);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [activeCelebration, progress]);
 
   // 2. Global Standings
   const globalStandings = useMemo(() => {
@@ -228,6 +252,15 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                     radial-gradient(circle at 90% 80%, ${CATEGORY_COLORS[currentCategory]}11 0%, transparent 40%)`,
         pointerEvents: 'none'
       }} />
+
+      <AnimatePresence>
+        {activeCelebration && (
+            <WinnerCelebration 
+                winner={activeCelebration} 
+                onComplete={handleCelebrationComplete} 
+            />
+        )}
+      </AnimatePresence>
 
       {/* MAIN DATA MONITOR */}
       <AnimatePresence mode="wait">
