@@ -76,13 +76,13 @@ const Counter = ({ value, fontSize = 10 }: { value: number, fontSize?: number })
 };
 
 const CountingLabel = (props: any) => {
-  const { x, y, width, height, value, theme } = props;
+  const { x, y, width, value, theme } = props;
   if (value === 0) return null;
   return (
     <text 
-      x={x + width + 8} 
-      y={y + height / 2} 
-      dy={5} 
+      x={x + width / 2} 
+      y={y - 10} 
+      textAnchor="middle"
       fill={theme.palette.text.primary} 
       style={{ fontWeight: 900 }}
     >
@@ -239,7 +239,7 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         >
           <Paper sx={{ 
-            p: 3, borderRadius: 10, bgcolor: 'transparent', position: 'relative', overflow: 'hidden',
+            p: 2, borderRadius: 10, bgcolor: 'transparent', position: 'relative', overflow: 'hidden',
             boxShadow: 'none'
           }}>
             {/* Cycle Progress Bar */}
@@ -258,7 +258,7 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
             </Box>
 
             {/* Header */}
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2, pt: 0.5 }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, pt: 0.5 }}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <Box sx={{ 
                   p: 1.2, bgcolor: CATEGORY_COLORS[currentCategory], borderRadius: 3, color: 'white',
@@ -283,38 +283,45 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
             </Stack>
 
             {/* BAR CHART */}
-            <Box sx={{ height: 'calc(100vh - 320px)', width: '100%', mt: 0 }}>
+            <Box sx={{ height: 'calc(100vh - 250px)', width: '100%', mt: 0 }}>
               {categoryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={categoryData} 
-                    layout="vertical" 
-                    margin={{ left: 130, right: 60, top: 10, bottom: 10 }} 
-                    barSize={8} 
-                    barGap={2}
-                    barCategoryGap="15%"
+                    layout="horizontal" 
+                    margin={{ left: 50, right: 30, top: 30, bottom: 80 }} 
+                    barSize={24} 
+                    barGap={6}
+                    barCategoryGap="20%"
                   >
                     <defs>
                       {teams.map(team => (
-                        <linearGradient key={`grad-${team._id}`} id={`grad-${team._id}`} x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor={TEAM_COLOR_MAP[team.color].grad[0]} />
-                          <stop offset="100%" stopColor={TEAM_COLOR_MAP[team.color].grad[1]} />
+                        <linearGradient key={`grad-${team._id}`} id={`grad-${team._id}`} x1="0" y1="1" x2="0" y2="0">
+                          <stop offset="0%" stopColor={TEAM_COLOR_MAP[team.color].grad[1]} />
+                          <stop offset="100%" stopColor={TEAM_COLOR_MAP[team.color].grad[0]} />
                         </linearGradient>
                       ))}
                     </defs>
-                    <CartesianGrid strokeDasharray="2 2" horizontal={false} stroke={theme.palette.divider} opacity={0.3} />
+                    <CartesianGrid strokeDasharray="2 2" vertical={false} stroke={theme.palette.divider} opacity={0.3} />
                     <XAxis 
-                      type="number" 
-                      domain={[0, 20]} 
-                      ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]}
-                      tick={{ fontWeight: 800, fill: theme.palette.text.secondary, fontSize: 13 }}
+                      dataKey="eventName" 
+                      type="category" 
+                      tick={{ fontWeight: 800, fill: theme.palette.text.primary, fontSize: 13 }}
+                      interval={0}
+                      angle={-30}
+                      textAnchor="end"
+                      height={80}
                       axisLine={{ stroke: theme.palette.divider, opacity: 0.5 }}
                       tickLine={false}
                     />
                     <YAxis 
-                      dataKey="eventName" type="category" 
-                      tick={{ fontWeight: 900, fill: theme.palette.text.primary, fontSize: 16 }}
-                      axisLine={false} tickLine={false} width={130}
+                      type="number" 
+                      domain={[0, 40]} 
+                      ticks={[0, 5, 10, 15, 20, 25, 30, 35, 40]}
+                      tick={{ fontWeight: 900, fill: theme.palette.text.secondary, fontSize: 13 }}
+                      axisLine={false} 
+                      tickLine={false} 
+                      width={50}
                     />
                     <RechartsTooltip 
                       cursor={{ fill: 'rgba(0,0,0,0.03)' }}
@@ -329,7 +336,7 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                     {teams.map((team) => (
                       <Bar 
                         key={team._id} dataKey={team.name} 
-                        radius={[0, 20, 20, 0]}
+                        radius={[10, 10, 0, 0]}
                         animationDuration={1500}
                       >
                         {categoryData.map((entry: any, index: number) => {
@@ -345,7 +352,6 @@ export default function StandingsDashboard({ teams, allScores, events }: Props) 
                             />
                           );
                         })}
-                        {/* Numeric score label at the end of the bar with counting animation */}
                         <LabelList 
                           dataKey={team.name} 
                           content={<CountingLabel theme={theme} />}
