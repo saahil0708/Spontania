@@ -60,6 +60,13 @@ const CATEGORY_ICONS: Record<string, any> = {
   "Theatre": UserGroupIcon
 };
 
+const TEAM_LOGOS: Record<string, string> = {
+  white: '/assets/wn.png',
+  red: '/assets/rr.png',
+  blue: '/assets/bv.png',
+  green: '/assets/gg.png',
+};
+
 const pulseGlow = keyframes`
   0% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
   50% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4)); }
@@ -79,18 +86,32 @@ const Counter = ({ value, fontSize = 10 }: { value: number, fontSize?: number })
 };
 
 const CountingLabel = (props: any) => {
-  const { x, y, width, value, theme } = props;
+  const { x, y, width, value, theme, teamKey } = props;
   if (value === 0) return null;
+  const logo = TEAM_LOGOS[teamKey] || '';
+
   return (
-    <text 
-      x={x + width / 2} 
-      y={y - 10} 
-      textAnchor="middle"
-      fill={theme.palette.text.primary} 
-      style={{ fontWeight: 900 }}
-    >
-      <Counter value={value} fontSize={14} />
-    </text>
+    <g>
+      {logo && (
+        <image
+          xlinkHref={logo}
+          x={x + width / 2 - 15}
+          y={y - 60}
+          width={30}
+          height={30}
+          style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.2))' }}
+        />
+      )}
+      <text 
+        x={x + width / 2} 
+        y={y - 12} 
+        textAnchor="middle"
+        fill={theme.palette.text.primary} 
+        style={{ fontWeight: 900 }}
+      >
+        <Counter value={value} fontSize={15} />
+      </text>
+    </g>
   );
 };
 
@@ -199,6 +220,29 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     }).slice(0, 7); 
   }, [events, allScores, currentCategory, teams]);
 
+  // 4. Category-Specific Leader Board
+  const categoryStandings = useMemo(() => {
+    return teams.map(team => {
+      const total = allScores
+        .filter(s => {
+          const eventName = s.event?.name;
+          const cat = s.event?.category || EVENT_CATEGORY_MAP[eventName] || "General";
+          return s.team?._id === team._id && cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
+        })
+        .reduce((sum, s) => sum + (parseFloat(s.score) || 0), 0);
+      return { ...team, total };
+    }).sort((a, b) => b.total - a.total);
+  }, [teams, allScores, currentCategory]);
+
+  const categoryWinners = useMemo(() => {
+    const topScore = categoryStandings[0]?.total;
+    if (!topScore || topScore === 0) return [];
+    return categoryStandings.filter(t => t.total === topScore);
+  }, [categoryStandings]);
+
+  const isTie = categoryWinners.length > 1;
+  const categoryLeader = categoryWinners[0];
+
   const maxScore = useMemo(() => {
     let max = 0;
     categoryData.forEach(entry => {
@@ -304,9 +348,62 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                   <Typography variant="caption" sx={{ opacity: 0.6, fontWeight: 700, display: 'block' }}>Competition Dynamics • Round Analytics</Typography>
                 </Box>
               </Stack>
+
+              {/* Category Leader Badge - Small Space */}
+              {categoryWinners.length > 0 && (
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: 0.8, 
+                    px: 2, 
+                    borderRadius: 1, 
+                    bgcolor: 'rgba(255,255,255,0.4)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                  }}
+                >
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1, display: 'block', lineHeight: 1, fontSize: '0.6rem' }}>
+                      {isTie ? 'Tie Leaders' : 'Overall Leader'}
+                    </Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 950, color: '#1e293b', lineHeight: 1 }}>
+                      {isTie ? 'MULTIPLE' : categoryLeader.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: -1, alignItems: 'center', position: 'relative' }}>
+                    {categoryWinners.map((winner, idx) => (
+                      <Box 
+                        key={winner._id}
+                        sx={{ 
+                          width: 34, height: 34, borderRadius: '50%', bgcolor: 'white', p: 0.4,
+                          border: '2px solid', borderColor: TEAM_COLOR_MAP[winner.color]?.main || 'divider',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                          marginLeft: idx > 0 ? -1.5 : 0,
+                          zIndex: categoryWinners.length - idx,
+                          position: 'relative',
+                          transition: 'transform 0.2s',
+                          '&:hover': { transform: 'translateY(-4px)', zIndex: 10 }
+                        }}
+                      >
+                        <img src={TEAM_LOGOS[winner.color]} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </Box>
+                    ))}
+                    <Box sx={{ 
+                      position: 'absolute', bottom: -4, right: -4, bgcolor: 'primary.main', 
+                      color: 'white', px: 0.6, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 900,
+                      zIndex: 20
+                    }}>
+                      {categoryWinners[0].total}
+                    </Box>
+                  </Box>
+                </Paper>
+              )}
               
               <Box sx={{ textAlign: 'right' }}>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.2, justifyContent: 'flex-end' }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.2, justifyContent: 'flex-end', mr: 0.7 }}>
                   <Box className="live-dot" />
                   <Typography variant="caption" sx={{ fontWeight: 900, color: 'error.main', letterSpacing: 1.2, fontSize: '0.65rem' }}>LIVE BROADCAST</Typography>
                 </Stack>
@@ -348,13 +445,13 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                       tickLine={false}
                     />
                     <YAxis 
-                      type="number" 
-                      domain={[0, 40]} 
+                      tick={{ fill: theme.palette.text.secondary, fontWeight: 800, fontSize: 13 }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 40]}
                       ticks={[0, 5, 10, 15, 20, 25, 30, 35, 40]}
-                      tick={{ fontWeight: 900, fill: theme.palette.text.secondary, fontSize: 13 }}
-                      axisLine={false} 
-                      tickLine={false} 
-                      width={50}
+                      width={40}
+                      padding={{ top: 60 }}
                     />
                     <RechartsTooltip 
                       cursor={{ fill: 'rgba(0,0,0,0.03)' }}
@@ -387,7 +484,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                         })}
                         <LabelList 
                           dataKey={team.name} 
-                          content={<CountingLabel theme={theme} />}
+                          content={<CountingLabel theme={theme} teamKey={team.color} />}
                         />
                       </Bar>
                     ))}
