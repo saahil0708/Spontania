@@ -126,7 +126,7 @@ function ScoringContent() {
     }
 
     let topScore = -1;
-    let topTeamId = null;
+    let topTeamId: string | null = null;
 
     // existingScores comes from the query
     existingScores.forEach((s: any) => {
