@@ -1,18 +1,18 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { 
+import {
   Box, Paper, Typography, Stack, useTheme, Grid, Avatar,
   keyframes, LinearProgress
 } from '@mui/material';
-import { 
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, Legend, Cell, LabelList
 } from 'recharts';
 import { motion, AnimatePresence, animate } from 'framer-motion';
-import { 
-  TrophyIcon, 
-  ChevronUpIcon, 
+import {
+  TrophyIcon,
+  ChevronUpIcon,
   ChevronDownIcon,
   MusicalNoteIcon,
   StarIcon,
@@ -73,6 +73,84 @@ const pulseGlow = keyframes`
   100% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.1)); }
 `;
 
+const BackgroundCurves = () => {
+  const colors = {
+    red: '#ff5252',
+    skyBlue: '#00a8ff',
+    orange: '#ff9f43',
+    green: '#1dd1a1'
+  };
+
+  return (
+    <Box sx={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1,
+      overflow: 'hidden', pointerEvents: 'none',
+      background: '#f8fafc'
+    }}>
+      {/* High-Visibility Aurora Mesh */}
+      <Box sx={{
+        position: 'absolute', top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
+        filter: 'blur(80px)', // Slightly reduced blur for more "solid" color
+        opacity: 0.9, // Significantly boosted opacity
+        zIndex: 0
+      }}>
+        <svg width="100%" height="100%">
+          {/* Animated Liquid Blobs - Bold Saturation */}
+          <motion.circle
+            cx="10%" cy="10%" r="500" fill={colors.red}
+            animate={{ cx: ["10%", "30%", "10%"], cy: ["10%", "0%", "10%"] }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.6 }}
+          />
+          <motion.circle
+            cx="90%" cy="15%" r="600" fill={colors.skyBlue}
+            animate={{ cx: ["90%", "70%", "90%"], cy: ["15%", "35%", "15%"] }}
+            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.5 }}
+          />
+          <motion.circle
+            cx="15%" cy="90%" r="550" fill={colors.orange}
+            animate={{ cx: ["15%", "35%", "15%"], cy: ["90%", "75%", "90%"] }}
+            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.5 }}
+          />
+          <motion.circle
+            cx="85%" cy="85%" r="500" fill={colors.green}
+            animate={{ cx: ["85%", "65%", "85%"], cy: ["85%", "95%", "85%"] }}
+            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.6 }}
+          />
+
+          {/* Large Flowing Waves */}
+          <motion.path
+            d="M 0 1000 C 300 800 600 1200 1000 1000 V 400 H 0 Z"
+            fill={colors.red}
+            animate={{ d: ["M 0 1000 C 300 800 600 1200 1000 1000 V 400 H 0 Z", "M 0 1000 C 400 1100 700 900 1000 1000 V 300 H 0 Z", "M 0 1000 C 300 800 600 1200 1000 1000 V 400 H 0 Z"] }}
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.3 }}
+          />
+        </svg>
+      </Box>
+
+      {/* Surface Depth Layer (Subtle Glassmorphism) */}
+      <Box sx={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'saturate(150%) brightness(1.1)', // Enhances the colors from behind
+        zIndex: 1
+      }} />
+
+      {/* Subtle Texture Layer */}
+      <Box sx={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        opacity: 0.03,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3F%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        zIndex: 2
+      }} />
+    </Box>
+  );
+};
+
 const Counter = ({ value, fontSize = 10 }: { value: number, fontSize?: number }) => {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -102,11 +180,11 @@ const CountingLabel = (props: any) => {
           style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.2))' }}
         />
       )}
-      <text 
-        x={x + width / 2} 
-        y={y - 12} 
+      <text
+        x={x + width / 2}
+        y={y - 12}
         textAnchor="middle"
-        fill={theme.palette.text.primary} 
+        fill={theme.palette.text.primary}
         style={{ fontWeight: 900 }}
       >
         <Counter value={value} fontSize={15} />
@@ -122,9 +200,12 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   const [progress, setProgress] = useState(0);
   const [activeCelebration, setActiveCelebration] = useState<any>(null);
   const [announceWinner] = useAnnounceWinnerMutation();
-  const CYCLE_TIME = 8000; 
-
-  const currentCategory = CATEGORIES[categoryIndex];
+  const CATEGORY_LIST = useMemo(() => CATEGORIES, []); // Removed CHAMPIONSHIP STANDINGS from regular cycle
+  const [showSummaryOverride, setShowSummaryOverride] = useState(false);
+  const [lastWinnerInfo, setLastWinnerInfo] = useState<{ teamName: string; points: number } | null>(null);
+  const currentCategory = showSummaryOverride ? "CHAMPIONSHIP STANDINGS" : CATEGORY_LIST[categoryIndex];
+  const CYCLE_TIME = 8000;
+  const SUMMARY_DISPLAY_TIME = 15000; // 15 seconds for the final summary
 
   // Logic to detect new winners
   useEffect(() => {
@@ -138,30 +219,47 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
 
   const handleCelebrationComplete = async () => {
     if (activeCelebration) {
-      await announceWinner(activeCelebration._id);
+      const winnerId = activeCelebration._id;
+      const teamName = activeCelebration.team.name;
+      const rank = activeCelebration.rank;
+      
+      // Approximate points gained based on rank (1st: 10, 2nd: 7, 3rd: 5)
+      const points = rank === 1 ? 10 : rank === 2 ? 7 : 5;
+      
+      setLastWinnerInfo({ teamName, points });
+      await announceWinner(winnerId);
       setActiveCelebration(null);
+      
+      // Trigger the summary override
+      setShowSummaryOverride(true);
+      setProgress(0);
+      
+      setTimeout(() => {
+        setShowSummaryOverride(false);
+        setLastWinnerInfo(null);
+      }, SUMMARY_DISPLAY_TIME);
     }
   };
 
   // 1. Progress & Cycle Logic
   useEffect(() => {
-    if (activeCelebration) return; // Pause cycle during celebration
+    if (activeCelebration || showSummaryOverride) return; // Pause cycle during celebration or summary override
 
-    const interval = 50; 
+    const interval = 50;
     const step = (interval / CYCLE_TIME) * 100;
     let currentProgress = progress;
-    
+
     const timer = setInterval(() => {
       currentProgress += step;
       if (currentProgress >= 100) {
         currentProgress = 0;
-        setCategoryIndex((idx) => (idx + 1) % CATEGORIES.length);
+        setCategoryIndex((idx) => (idx + 1) % CATEGORY_LIST.length);
       }
       setProgress(currentProgress);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [activeCelebration, progress]);
+  }, [activeCelebration, showSummaryOverride, progress]);
 
   // 2. Global Standings
   const globalStandings = useMemo(() => {
@@ -185,6 +283,8 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   }, [globalStandings, prevStandings]);
 
   const leader = globalStandings[0];
+  const second = globalStandings[1];
+  const leaderMargin = leader && second ? leader.total - second.total : 0;
 
   // 3. Category Data
   const categoryData = useMemo(() => {
@@ -194,20 +294,21 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     );
 
     const dbEventsInCategory = events.filter(e => {
-        const eventName = e.name?.trim();
-        const cat = e.category || EVENT_CATEGORY_MAP[eventName] || "General";
-        return cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
+      if (e.name === "Tournament Baseline") return false; // Exclude baseline from individual charts
+      const eventName = e.name?.trim();
+      const cat = e.category || EVENT_CATEGORY_MAP[eventName] || "General";
+      return cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
     });
 
     const mergedEvents = expectedEventNames.map(name => {
-         const found = dbEventsInCategory.find(e => e.name?.trim() === name);
-         return found || { _id: `dummy-${name}`, name };
+      const found = dbEventsInCategory.find(e => e.name?.trim() === name);
+      return found || { _id: `dummy-${name}`, name };
     });
 
     dbEventsInCategory.forEach(e => {
-         if (!expectedEventNames.includes(e.name?.trim())) {
-              mergedEvents.push(e);
-         }
+      if (!expectedEventNames.includes(e.name?.trim())) {
+        mergedEvents.push(e);
+      }
     });
 
     return mergedEvents.map(evt => {
@@ -217,7 +318,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
         dataPoint[team.name] = parseFloat(scoreObj?.score || '0');
       });
       return dataPoint;
-    }).slice(0, 7); 
+    }).slice(0, 7);
   }, [events, allScores, currentCategory, teams]);
 
   // 4. Category-Specific Leader Board
@@ -225,6 +326,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     return teams.map(team => {
       const total = allScores
         .filter(s => {
+          if (s.event?.name === "Tournament Baseline") return false; // Exclude baseline from category scores
           const eventName = s.event?.name;
           const cat = s.event?.category || EVENT_CATEGORY_MAP[eventName] || "General";
           return s.team?._id === team._id && cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
@@ -259,10 +361,10 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   const Icon = CATEGORY_ICONS[currentCategory] || StarIcon;
 
   return (
-    <Box sx={{ 
-      width: '100%', 
-      height: '100%', 
-      position: 'relative', 
+    <Box sx={{
+      width: '100%',
+      height: '100%',
+      position: 'relative',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column'
@@ -289,20 +391,15 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
           box-shadow: 0 0 10px #ef4444;
         }
       `}</style>
-      {/* Background Decorative Mesh */}
-      <Box sx={{ 
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1,
-        background: `radial-gradient(circle at 10% 20%, ${theme.palette.primary.main}11 0%, transparent 40%),
-                    radial-gradient(circle at 90% 80%, ${CATEGORY_COLORS[currentCategory]}11 0%, transparent 40%)`,
-        pointerEvents: 'none'
-      }} />
+      {/* Premium Smooth Curve Background */}
+      <BackgroundCurves />
 
       <AnimatePresence>
         {activeCelebration && (
-            <WinnerCelebration 
-                winner={activeCelebration} 
-                onComplete={handleCelebrationComplete} 
-            />
+          <WinnerCelebration
+            winner={activeCelebration}
+            onComplete={handleCelebrationComplete}
+          />
         )}
       </AnimatePresence>
 
@@ -315,31 +412,31 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
           exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         >
-          <Paper sx={{ 
+          <Paper sx={{
             p: 2, borderRadius: 10, bgcolor: 'transparent', position: 'relative', overflow: 'hidden',
             boxShadow: 'none'
           }}>
             {/* Cycle Progress Bar */}
             <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-              <LinearProgress 
-                variant="determinate" 
-                value={progress} 
-                sx={{ 
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{
                   height: 6, bgcolor: 'transparent',
-                  '& .MuiLinearProgress-bar': { 
-                    bgcolor: CATEGORY_COLORS[currentCategory], 
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: currentCategory === "CHAMPIONSHIP STANDINGS" ? theme.palette.primary.main : CATEGORY_COLORS[currentCategory],
                     transition: 'transform 0.05s linear'
                   }
-                }} 
+                }}
               />
             </Box>
 
             {/* Header */}
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1, pt: 0.5 }}>
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                <Box sx={{ 
-                  p: 1.2, bgcolor: CATEGORY_COLORS[currentCategory], borderRadius: 3, color: 'white',
-                  boxShadow: `0 8px 16px ${CATEGORY_COLORS[currentCategory]}33`
+                <Box sx={{
+                  p: 1.2, bgcolor: currentCategory === "CHAMPIONSHIP STANDINGS" ? theme.palette.primary.main : CATEGORY_COLORS[currentCategory], borderRadius: 3, color: 'white',
+                  boxShadow: `0 8px 16px ${currentCategory === "CHAMPIONSHIP STANDINGS" ? theme.palette.primary.main : CATEGORY_COLORS[currentCategory]}33`
                 }}>
                   <Icon style={{ width: 24, height: 24 }} />
                 </Box>
@@ -350,13 +447,13 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
               </Stack>
 
               {/* Category Leader Badge - Small Space */}
-              {categoryWinners.length > 0 && (
-                <Paper 
+              {categoryWinners.length > 0 && currentCategory !== "CHAMPIONSHIP STANDINGS" && (
+                <Paper
                   elevation={0}
-                  sx={{ 
-                    p: 0.8, 
-                    px: 2, 
-                    borderRadius: 1, 
+                  sx={{
+                    p: 0.8,
+                    px: 2,
+                    borderRadius: 1,
                     bgcolor: 'rgba(255,255,255,0.4)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(0,0,0,0.05)',
@@ -375,9 +472,9 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                   </Box>
                   <Box sx={{ display: 'flex', gap: -1, alignItems: 'center', position: 'relative' }}>
                     {categoryWinners.map((winner, idx) => (
-                      <Box 
+                      <Box
                         key={winner._id}
-                        sx={{ 
+                        sx={{
                           width: 34, height: 34, borderRadius: '50%', bgcolor: 'white', p: 0.4,
                           border: '2px solid', borderColor: TEAM_COLOR_MAP[winner.color]?.main || 'divider',
                           boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -391,8 +488,8 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                         <img src={TEAM_LOGOS[winner.color]} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                       </Box>
                     ))}
-                    <Box sx={{ 
-                      position: 'absolute', bottom: -4, right: -4, bgcolor: 'primary.main', 
+                    <Box sx={{
+                      position: 'absolute', bottom: -4, right: -4, bgcolor: 'primary.main',
                       color: 'white', px: 0.6, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 900,
                       zIndex: 20
                     }}>
@@ -401,26 +498,110 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                   </Box>
                 </Paper>
               )}
-              
+
               <Box sx={{ textAlign: 'right' }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.2, justifyContent: 'flex-end', mr: 0.7 }}>
                   <Box className="live-dot" />
                   <Typography variant="caption" sx={{ fontWeight: 900, color: 'error.main', letterSpacing: 1.2, fontSize: '0.65rem' }}>LIVE BROADCAST</Typography>
                 </Stack>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: CATEGORY_COLORS[currentCategory], lineHeight: 1 }}>SECTION {categoryIndex + 1}/{CATEGORIES.length}</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 800, opacity: 0.5, display: 'block', fontSize: '0.7rem' }}>AUTO-CYCLING ACTIVE</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: currentCategory === "CHAMPIONSHIP STANDINGS" ? "primary.main" : CATEGORY_COLORS[currentCategory], lineHeight: 1 }}>
+                  {currentCategory === "CHAMPIONSHIP STANDINGS" ? "FINAL SUMMARY" : `SECTION ${categoryIndex + 1}/${CATEGORIES.length}`}
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 800, opacity: 0.5, display: 'block', fontSize: '0.7rem' }}>
+                  {showSummaryOverride ? "EVENT UPDATE DISPLAY" : "AUTO-CYCLING ACTIVE"}
+                </Typography>
               </Box>
             </Stack>
 
+            {/* Summary Information Cards (Only shown during override) */}
+            <AnimatePresence>
+              {showSummaryOverride && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                  animate={{ height: 'auto', opacity: 1, marginBottom: 16 }}
+                  exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <Grid container spacing={2}>
+                    {lastWinnerInfo && (
+                      <Grid size={6}>
+                        <Paper elevation={0} sx={{ 
+                          p: 2, bgcolor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', 
+                          borderRadius: 4, border: '1px solid rgba(0,0,0,0.05)',
+                          display: 'flex', alignItems: 'center', gap: 2
+                        }}>
+                          <Box sx={{ 
+                            p: 1.5, bgcolor: 'success.main', borderRadius: '50%', color: 'white',
+                            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
+                          }}>
+                            <ChevronUpIcon style={{ width: 24, height: 24 }} />
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>RECENT GAIN</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 950, color: '#1e293b' }}>
+                              {lastWinnerInfo.teamName}: <span style={{ color: '#22c55e' }}>+{lastWinnerInfo.points} PTS</span>
+                            </Typography>
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    )}
+                    <Grid size={lastWinnerInfo ? 6 : 12}>
+                      <Paper elevation={0} sx={{ 
+                        p: 2, bgcolor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', 
+                        borderRadius: 4, border: '1px solid rgba(0,0,0,0.05)',
+                        display: 'flex', alignItems: 'center', gap: 2
+                      }}>
+                        <Box sx={{ 
+                          p: 1.5, bgcolor: 'primary.main', borderRadius: '50%', color: 'white',
+                          boxShadow: '0 4px 12px rgba(30, 64, 175, 0.3)'
+                        }}>
+                          <TrophyIcon style={{ width: 24, height: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>LEADERSHIP STATUS</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 950, color: '#1e293b' }}>
+                            {leader?.name} is leading by <span style={{ color: theme.palette.primary.main }}>{leaderMargin} PTS</span>
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* BAR CHART */}
-            <Box sx={{ height: 'calc(100vh - 250px)', width: '100%', mt: 0 }}>
-              {categoryData.length > 0 ? (
+            <Box sx={{ height: showSummaryOverride ? 'calc(100vh - 350px)' : 'calc(100vh - 250px)', width: '100%', mt: 0, transition: 'height 0.5s ease' }}>
+              {currentCategory === "CHAMPIONSHIP STANDINGS" ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={categoryData} 
-                    layout="horizontal" 
-                    margin={{ left: 50, right: 30, top: 30, bottom: 80 }} 
-                    barSize={24} 
+                  <BarChart data={globalStandings} margin={{ left: 50, right: 30, top: 40, bottom: 20 }}>
+                    <defs>
+                      {teams.map(team => (
+                        <linearGradient key={`grad-global-${team._id}`} id={`grad-global-${team._id}`} x1="0" y1="1" x2="0" y2="0">
+                          <stop offset="0%" stopColor={TEAM_COLOR_MAP[team.color].grad[1]} />
+                          <stop offset="100%" stopColor={TEAM_COLOR_MAP[team.color].grad[0]} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                    <XAxis dataKey="name" tick={{ fontWeight: 900, fontSize: 14 }} />
+                    <YAxis domain={[0, 300]} ticks={[0, 50, 100, 150, 200, 250, 300]} tick={{ fontWeight: 800 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: 12, fontWeight: 800 }} />
+                    <Bar dataKey="total" radius={[15, 15, 0, 0]} animationDuration={2000}>
+                      {globalStandings.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={`url(#grad-global-${entry.id})`} />
+                      ))}
+                      <LabelList dataKey="total" content={<CountingLabel theme={theme} teamKey="color" />} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={categoryData}
+                    layout="horizontal"
+                    margin={{ left: 50, right: 30, top: 30, bottom: 80 }}
+                    barSize={24}
                     barGap={6}
                     barCategoryGap="20%"
                   >
@@ -433,9 +614,9 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                       ))}
                     </defs>
                     <CartesianGrid strokeDasharray="2 2" vertical={false} stroke={theme.palette.divider} opacity={0.3} />
-                    <XAxis 
-                      dataKey="eventName" 
-                      type="category" 
+                    <XAxis
+                      dataKey="eventName"
+                      type="category"
                       tick={{ fontWeight: 800, fill: theme.palette.text.primary, fontSize: 13 }}
                       interval={0}
                       angle={-30}
@@ -444,7 +625,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                       axisLine={{ stroke: theme.palette.divider, opacity: 0.5 }}
                       tickLine={false}
                     />
-                    <YAxis 
+                    <YAxis
                       tick={{ fill: theme.palette.text.secondary, fontWeight: 800, fontSize: 13 }}
                       axisLine={false}
                       tickLine={false}
@@ -453,37 +634,37 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
                       width={40}
                       padding={{ top: 60 }}
                     />
-                    <RechartsTooltip 
+                    <RechartsTooltip
                       cursor={{ fill: 'rgba(0,0,0,0.03)' }}
-                      contentStyle={{ 
-                        borderRadius: 16, border: '1px solid rgba(255,255,255,0.4)', 
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: 16, 
+                      contentStyle={{
+                        borderRadius: 16, border: '1px solid rgba(255,255,255,0.4)',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.08)', padding: 16,
                         backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(12px)'
                       }}
                       itemStyle={{ fontWeight: 800, fontSize: 13, padding: '4px 0' }}
                       labelStyle={{ fontWeight: 900, fontSize: 12, opacity: 0.5, marginBottom: 8, textTransform: 'uppercase' }}
                     />
                     {teams.map((team) => (
-                      <Bar 
-                        key={team._id} dataKey={team.name} 
+                      <Bar
+                        key={team._id} dataKey={team.name}
                         radius={[10, 10, 0, 0]}
                         animationDuration={1500}
                       >
                         {categoryData.map((entry: any, index: number) => {
                           const isHighest = entry[team.name] === maxScore && maxScore > 0;
                           return (
-                            <Cell 
+                            <Cell
                               key={`cell-${index}`}
                               fill={`url(#grad-${team._id})`}
                               className={isHighest ? 'highest-bar' : ''}
-                              style={{ 
+                              style={{
                                 filter: team.name === 'White' || team.color === 'white' ? 'drop-shadow(0 0 2px rgba(0,0,0,0.2))' : 'none'
                               }}
                             />
                           );
                         })}
-                        <LabelList 
-                          dataKey={team.name} 
+                        <LabelList
+                          dataKey={team.name}
                           content={<CountingLabel theme={theme} teamKey={team.color} />}
                         />
                       </Bar>
@@ -503,12 +684,12 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
       </AnimatePresence>
 
       <Box sx={{ mt: 'auto', pb: 2, zIndex: 10 }}>
-        <Typography 
-          sx={{ 
-            display: 'block', 
-            textAlign: 'center', 
-            fontWeight: 900, 
-            letterSpacing: 4, 
+        <Typography
+          sx={{
+            display: 'block',
+            textAlign: 'center',
+            fontWeight: 900,
+            letterSpacing: 4,
             color: '#1e293b',
             fontSize: '0.85rem',
             textTransform: 'uppercase'

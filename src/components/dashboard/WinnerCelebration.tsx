@@ -43,17 +43,17 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
         // Trigger confetti
         const duration = (isFinal ? 10 : 5) * 1000;
         const animationEnd = Date.now() + duration;
-        const defaults = { 
-            startVelocity: isFinal ? 45 : 30, 
-            spread: 360, 
-            ticks: isFinal ? 100 : 60, 
+        const defaults = {
+            startVelocity: isFinal ? 45 : 30,
+            spread: 360,
+            ticks: isFinal ? 100 : 60,
             zIndex: 9999,
             scalar: isFinal ? 1.5 : 1
         };
 
         const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-        const interval: any = setInterval(function() {
+        const interval: any = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
@@ -63,7 +63,7 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
             const particleCount = (isFinal ? 80 : 50) * (timeLeft / duration);
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-            
+
             if (isFinal && Math.random() > 0.7) {
                 confetti({
                     ...defaults,
@@ -111,12 +111,12 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
             >
                 {/* 1. BACKGROUND WATERMARK */}
                 {teamLogo && (
-                    <motion.img 
+                    <motion.img
                         src={teamLogo}
                         initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
                         animate={{ opacity: 0.1, scale: 1.5, rotate: 0 }}
                         transition={{ duration: 2 }}
-                        style={{ 
+                        style={{
                             position: 'absolute',
                             zIndex: -1,
                             width: '80vh',
@@ -130,14 +130,14 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
 
                 {/* 2. TOP HERO LOGO */}
                 {teamLogo && (
-                    <motion.img 
+                    <motion.img
                         src={teamLogo}
                         initial={{ scale: 0, y: 100, opacity: 0 }}
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         transition={{ delay: 0.4, type: 'spring', damping: 12, stiffness: 100 }}
-                        style={{ 
-                            width: isFinal ? 240 : 160, 
-                            height: isFinal ? 240 : 160, 
+                        style={{
+                            width: isFinal ? 240 : 160,
+                            height: isFinal ? 240 : 160,
                             objectFit: 'contain',
                             marginBottom: 24,
                             zIndex: 10,
@@ -152,10 +152,10 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.8, duration: 0.5 }}
                 >
-                    <Typography variant="h6" sx={{ 
-                        textTransform: 'uppercase', 
-                        letterSpacing: isFinal ? 16 : 10, 
-                        fontWeight: 950, 
+                    <Typography variant="h6" sx={{
+                        textTransform: 'uppercase',
+                        letterSpacing: isFinal ? 16 : 10,
+                        fontWeight: 950,
                         color: teamColor,
                         mb: 4,
                         textAlign: 'center',
@@ -170,16 +170,16 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                 <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: isFinal ? 1.2 : 1, opacity: 1 }}
-                    transition={{ 
+                    transition={{
                         type: "spring",
                         stiffness: 150,
                         damping: 20,
                         delay: 1
                     }}
                 >
-                    <Paper sx={{ 
-                        p: isFinal ? 8 : 6, 
-                        borderRadius: 2, 
+                    <Paper sx={{
+                        p: isFinal ? 8 : 6,
+                        borderRadius: 2,
                         border: `4px solid ${teamColor}`,
                         boxShadow: `0 0 80px ${teamColor}66`,
                         background: `rgba(15, 23, 42, 0.9)`, // Solid dark for contrast
@@ -192,15 +192,15 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                         minWidth: isFinal ? 600 : 450
                     }}>
                         {isFinal && (
-                            <Box sx={{ 
-                                position: 'absolute', top: -30, right: -30, fontSize: '12rem', 
-                                opacity: 0.1, color: 'white', transform: 'rotate(20deg)', pointerEvents: 'none' 
+                            <Box sx={{
+                                position: 'absolute', top: -30, right: -30, fontSize: '12rem',
+                                opacity: 0.1, color: 'white', transform: 'rotate(20deg)', pointerEvents: 'none'
                             }}>
                                 🏆
                             </Box>
                         )}
-                        <Typography sx={{ 
-                            fontWeight: 950, 
+                        <Typography sx={{
+                            fontWeight: 950,
                             color: 'white',
                             lineHeight: 1,
                             textTransform: 'uppercase',
@@ -210,8 +210,8 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                         }}>
                             {winner.team.name}
                         </Typography>
-                        <Typography sx={{ 
-                            fontWeight: 800, 
+                        <Typography sx={{
+                            fontWeight: 800,
                             color: teamColor,
                             letterSpacing: 4,
                             fontSize: isFinal ? '2rem' : '1.5rem',
@@ -228,10 +228,10 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 1.5, duration: 0.5 }}
                 >
-                    <Typography sx={{ 
+                    <Typography sx={{
                         mt: 8,
-                        fontWeight: 900, 
-                        letterSpacing: 6, 
+                        fontWeight: 900,
+                        letterSpacing: 6,
                         color: 'white',
                         opacity: 0.8,
                         fontSize: isFinal ? '1.8rem' : '1.2rem',
@@ -241,16 +241,16 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
                     </Typography>
                 </motion.div>
 
-                <Box sx={{ 
-                    position: 'absolute', 
+                <Box sx={{
+                    position: 'absolute',
                     bottom: 40,
                     width: '100%',
                     textAlign: 'center',
                     opacity: 0.4
                 }}>
-                     <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: 8, textTransform: 'uppercase' }}>
-                         SPONTANIA CHAMPIONSHIP PLATFORM • 2026
-                     </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: 8, textTransform: 'uppercase' }}>
+                        SPONTANIA CHAMPIONSHIP PLATFORM • 2026
+                    </Typography>
                 </Box>
             </Box>
         </AnimatePresence>
