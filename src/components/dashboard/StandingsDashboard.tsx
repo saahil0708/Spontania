@@ -204,6 +204,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   const [showSummaryOverride, setShowSummaryOverride] = useState(false);
   const [lastWinnerInfo, setLastWinnerInfo] = useState<{ teamName: string; points: number } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitioningWinnerId, setTransitioningWinnerId] = useState<string | null>(null);
   const currentCategory = showSummaryOverride ? "CHAMPIONSHIP STANDINGS" : CATEGORY_LIST[categoryIndex];
   const CYCLE_TIME = 8000;
   const SUMMARY_DISPLAY_TIME = 15000; // 15 seconds for the final summary
@@ -212,13 +213,20 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   useEffect(() => {
     if (winners && winners.length > 0) {
       const pendingWinner = winners.find(w => !w.isAnnounced);
-      if (pendingWinner && (!activeCelebration || activeCelebration._id !== pendingWinner._id)) {
-        // Start black transition before showing celebration
+      
+      // Safety check: Don't start a transition if one is already in progress for this winner
+      // or if this winner is already being celebrated.
+      if (pendingWinner && 
+          pendingWinner._id !== transitioningWinnerId && 
+          (!activeCelebration || activeCelebration._id !== pendingWinner._id)) {
+        
+        setTransitioningWinnerId(pendingWinner._id);
         setIsTransitioning(true);
         
         setTimeout(() => {
           setActiveCelebration(pendingWinner);
           setIsTransitioning(false);
+          setTransitioningWinnerId(null);
           
           // If it's a final winner, mark as announced immediately so the celebration can be permanent
           if (pendingWinner.type === 'Final') {
@@ -227,7 +235,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
         }, 1200); // 1.2s black transition
       }
     }
-  }, [winners, activeCelebration, announceWinner]);
+  }, [winners, activeCelebration, announceWinner, transitioningWinnerId]);
 
   const handleCelebrationComplete = async () => {
     if (activeCelebration) {
@@ -251,7 +259,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
         setTimeout(() => {
           setShowSummaryOverride(false);
           setLastWinnerInfo(null);
-        }, 12000); // 12 seconds for round summary
+        }, 15000); // 15 seconds for round summary
       }
     }
   };
