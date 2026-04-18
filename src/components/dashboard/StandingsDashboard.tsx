@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, Legend, Cell, LabelList
+  Tooltip as RechartsTooltip, Legend, Cell, LabelList, AreaChart, Area
 } from 'recharts';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import {
@@ -203,6 +203,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   const CATEGORY_LIST = useMemo(() => CATEGORIES, []); // Removed CHAMPIONSHIP STANDINGS from regular cycle
   const [showSummaryOverride, setShowSummaryOverride] = useState(false);
   const [lastWinnerInfo, setLastWinnerInfo] = useState<{ teamName: string; points: number } | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const currentCategory = showSummaryOverride ? "CHAMPIONSHIP STANDINGS" : CATEGORY_LIST[categoryIndex];
   const CYCLE_TIME = 8000;
   const SUMMARY_DISPLAY_TIME = 15000; // 15 seconds for the final summary
@@ -212,10 +213,21 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     if (winners && winners.length > 0) {
       const pendingWinner = winners.find(w => !w.isAnnounced);
       if (pendingWinner && (!activeCelebration || activeCelebration._id !== pendingWinner._id)) {
-        setActiveCelebration(pendingWinner);
+        // Start black transition before showing celebration
+        setIsTransitioning(true);
+        
+        setTimeout(() => {
+          setActiveCelebration(pendingWinner);
+          setIsTransitioning(false);
+          
+          // If it's a final winner, mark as announced immediately so the celebration can be permanent
+          if (pendingWinner.type === 'Final') {
+            announceWinner(pendingWinner._id);
+          }
+        }, 1200); // 1.2s black transition
       }
     }
-  }, [winners, activeCelebration]);
+  }, [winners, activeCelebration, announceWinner]);
 
   const handleCelebrationComplete = async () => {
     if (activeCelebration) {
@@ -233,11 +245,14 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
       // Trigger the summary override
       setShowSummaryOverride(true);
       setProgress(0);
-      
-      setTimeout(() => {
-        setShowSummaryOverride(false);
-        setLastWinnerInfo(null);
-      }, SUMMARY_DISPLAY_TIME);
+
+      // Only return to normal cycle if it's NOT a final winner
+      if (activeCelebration.type !== 'Final') {
+        setTimeout(() => {
+          setShowSummaryOverride(false);
+          setLastWinnerInfo(null);
+        }, 12000); // 12 seconds for round summary
+      }
     }
   };
 
@@ -261,16 +276,40 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     return () => clearInterval(timer);
   }, [activeCelebration, showSummaryOverride, progress]);
 
-  // 2. Global Standings
+  // 2. Identify Visible Events (Dynamic Timeline)
+  const visibleEventIds = useMemo(() => {
+    // Baseline is always visible
+    const ids = new Set(events.filter(e => e.name === "Tournament Baseline").map(e => e._id));
+    
+    // Any event that has an announced winner is visible
+    winners?.forEach(w => {
+      if (w.type === 'Round' && w.event?._id) {
+        ids.add(w.event._id);
+      }
+    });
+
+    // The event currently being celebrated is also visible
+    if (activeCelebration?.type === 'Round' && activeCelebration.event?._id) {
+      ids.add(activeCelebration.event._id);
+    }
+
+    return ids;
+  }, [winners, activeCelebration, events]);
+
+  const filteredScores = useMemo(() => {
+    return allScores.filter(s => s.event?._id && visibleEventIds.has(s.event._id));
+  }, [allScores, visibleEventIds]);
+
+  // 3. Global Standings
   const globalStandings = useMemo(() => {
     const stats = teams.map(team => {
-      const total = allScores
+      const total = filteredScores
         .filter(s => s.team?._id === team._id)
         .reduce((sum, s) => sum + (parseFloat(s.score) || 0), 0);
       return { id: team._id, name: team.name, total, color: team.color };
     }).sort((a, b) => b.total - a.total);
     return stats;
-  }, [teams, allScores]);
+  }, [teams, filteredScores]);
 
   useEffect(() => {
     if (globalStandings.length > 0) {
@@ -286,7 +325,46 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
   const second = globalStandings[1];
   const leaderMargin = leader && second ? leader.total - second.total : 0;
 
-  // 3. Category Data
+  // 4. Points Progression Data (Variation over rounds)
+  const progressionData = useMemo(() => {
+    if (!filteredScores || filteredScores.length === 0) return [];
+    
+    // Get unique events in order
+    const scoredEventIds = Array.from(new Set(filteredScores.map(s => s.event?._id).filter(Boolean)));
+    const displayedEvents = events
+      .filter(e => scoredEventIds.includes(e._id))
+      .sort((a, b) => {
+        // Tournament Baseline ALWAYS comes first
+        if (a.name === "Tournament Baseline") return -1;
+        if (b.name === "Tournament Baseline") return 1;
+        return (a.createdAt || a.name).localeCompare(b.createdAt || b.name);
+      });
+
+    const runningTotals: Record<string, number> = {};
+    teams.forEach(t => runningTotals[t._id] = 0);
+
+    const history = displayedEvents.map(evt => {
+      const dataPoint: any = { eventName: evt.name };
+      teams.forEach(team => {
+        const scoreObj = filteredScores.find(s => s.team?._id === team._id && s.event?._id === evt._id);
+        const scoreVal = parseFloat(scoreObj?.score || '0');
+        runningTotals[team._id] += scoreVal;
+        dataPoint[team.name] = runningTotals[team._id];
+      });
+      return dataPoint;
+    });
+
+    // Add a baseline 0 point at the start if not already there
+    if (history.length > 0 && history[0].eventName !== 'Start') {
+        const baseline: any = { eventName: 'Start' };
+        teams.forEach(t => baseline[t.name] = 0);
+        return [baseline, ...history];
+    }
+    
+    return history;
+  }, [filteredScores, teams, events]);
+
+  // 5. Category Data
   const categoryData = useMemo(() => {
     // Expected events for this category
     const expectedEventNames = Object.keys(EVENT_CATEGORY_MAP).filter(
@@ -294,7 +372,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     );
 
     const dbEventsInCategory = events.filter(e => {
-      if (e.name === "Tournament Baseline") return false; // Exclude baseline from individual charts
+      if (e.name === "Tournament Baseline") return false; 
       const eventName = e.name?.trim();
       const cat = e.category || EVENT_CATEGORY_MAP[eventName] || "General";
       return cat.trim().toLowerCase() === currentCategory?.trim().toLowerCase();
@@ -302,8 +380,8 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
 
     const mergedEvents = expectedEventNames.map(name => {
       const found = dbEventsInCategory.find(e => e.name?.trim() === name);
-      return found || { _id: `dummy-${name}`, name };
-    });
+      return found || null;
+    }).filter(Boolean);
 
     dbEventsInCategory.forEach(e => {
       if (!expectedEventNames.includes(e.name?.trim())) {
@@ -321,7 +399,7 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
     }).slice(0, 7);
   }, [events, allScores, currentCategory, teams]);
 
-  // 4. Category-Specific Leader Board
+  // 6. Category-Specific Leader Board
   const categoryStandings = useMemo(() => {
     return teams.map(team => {
       const total = allScores
@@ -395,6 +473,24 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
       <BackgroundCurves />
 
       <AnimatePresence>
+        {isTransitioning && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            sx={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              bgcolor: 'black', zIndex: 10000, display: 'flex',
+              alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            <Typography variant="h3" sx={{ color: 'white', fontWeight: 900, letterSpacing: 10, opacity: 0.2 }}>
+              SPONTANIA
+            </Typography>
+          </Box>
+        )}
         {activeCelebration && (
           <WinnerCelebration
             winner={activeCelebration}
@@ -571,30 +667,66 @@ export default function StandingsDashboard({ teams, allScores, events, winners }
             </AnimatePresence>
 
             {/* BAR CHART */}
-            <Box sx={{ height: showSummaryOverride ? 'calc(100vh - 350px)' : 'calc(100vh - 250px)', width: '100%', mt: 0, transition: 'height 0.5s ease' }}>
+            <Box sx={{ height: showSummaryOverride ? 'calc(100vh - 280px)' : 'calc(100vh - 250px)', width: '100%', mt: 0, transition: 'height 0.5s ease' }}>
               {currentCategory === "CHAMPIONSHIP STANDINGS" ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={globalStandings} margin={{ left: 50, right: 30, top: 40, bottom: 20 }}>
-                    <defs>
-                      {teams.map(team => (
-                        <linearGradient key={`grad-global-${team._id}`} id={`grad-global-${team._id}`} x1="0" y1="1" x2="0" y2="0">
-                          <stop offset="0%" stopColor={TEAM_COLOR_MAP[team.color].grad[1]} />
-                          <stop offset="100%" stopColor={TEAM_COLOR_MAP[team.color].grad[0]} />
-                        </linearGradient>
-                      ))}
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-                    <XAxis dataKey="name" tick={{ fontWeight: 900, fontSize: 14 }} />
-                    <YAxis domain={[0, 300]} ticks={[0, 50, 100, 150, 200, 250, 300]} tick={{ fontWeight: 800 }} />
-                    <RechartsTooltip contentStyle={{ borderRadius: 12, fontWeight: 800 }} />
-                    <Bar dataKey="total" radius={[15, 15, 0, 0]} animationDuration={2000}>
-                      {globalStandings.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={`url(#grad-global-${entry.id})`} />
-                      ))}
-                      <LabelList dataKey="total" content={<CountingLabel theme={theme} teamKey="color" />} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ height: '65%', width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={globalStandings} margin={{ left: 50, right: 30, top: 40, bottom: 20 }}>
+                        <defs>
+                          {teams.map(team => (
+                            <linearGradient key={`grad-global-${team._id}`} id={`grad-global-${team._id}`} x1="0" y1="1" x2="0" y2="0">
+                              <stop offset="0%" stopColor={TEAM_COLOR_MAP[team.color].grad[1]} />
+                              <stop offset="100%" stopColor={TEAM_COLOR_MAP[team.color].grad[0]} />
+                            </linearGradient>
+                          ))}
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                        <XAxis dataKey="name" tick={{ fontWeight: 900, fontSize: 14 }} />
+                        <YAxis domain={[0, 300]} ticks={[0, 50, 100, 150, 200, 250, 300]} tick={{ fontWeight: 800 }} />
+                        <RechartsTooltip contentStyle={{ borderRadius: 12, fontWeight: 800 }} />
+                        <Bar dataKey="total" radius={[15, 15, 0, 0]} animationDuration={2000}>
+                          {globalStandings.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={`url(#grad-global-${entry.id})`} />
+                          ))}
+                          <LabelList dataKey="total" content={<CountingLabel theme={theme} teamKey="color" />} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+
+                  {progressionData.length > 1 && (
+                    <Box sx={{ height: '35%', width: '100%', mt: 1, background: 'rgba(255,255,255,0.3)', borderRadius: 4, pt: 2, pb: 1 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={progressionData} margin={{ left: 50, right: 30, top: 10, bottom: 0 }}>
+                          <defs>
+                            {teams.map(team => (
+                              <linearGradient key={`prog-grad-${team._id}`} id={`prog-grad-${team._id}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={TEAM_COLOR_MAP[team.color].main} stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor={TEAM_COLOR_MAP[team.color].main} stopOpacity={0}/>
+                              </linearGradient>
+                            ))}
+                          </defs>
+                          <XAxis dataKey="eventName" hide />
+                          <YAxis domain={[0, 300]} hide />
+                          <RechartsTooltip />
+                          {teams.map(team => (
+                            <Area
+                              key={`area-${team._id}`}
+                              type="monotone"
+                              dataKey={team.name}
+                              stroke={TEAM_COLOR_MAP[team.color].main}
+                              fillOpacity={1}
+                              fill={`url(#prog-grad-${team._id})`}
+                              strokeWidth={3}
+                              animationDuration={3000}
+                            />
+                          ))}
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  )}
+                </Box>
               ) : categoryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart

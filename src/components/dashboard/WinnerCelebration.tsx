@@ -56,11 +56,11 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
         const interval: any = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
-            if (timeLeft <= 0) {
+            if (!isFinal && timeLeft <= 0) {
                 return clearInterval(interval);
             }
 
-            const particleCount = (isFinal ? 80 : 50) * (timeLeft / duration);
+            const particleCount = isFinal ? 60 : (50 * (timeLeft / duration));
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
 
@@ -74,10 +74,13 @@ export default function WinnerCelebration({ winner, onComplete }: WinnerCelebrat
             }
         }, 250);
 
-        // Auto close after display duration
-        const timer = setTimeout(() => {
-            onComplete();
-        }, isFinal ? 12000 : 8000);
+        // Auto close after display duration (only for non-final winners)
+        let timer: any;
+        if (!isFinal) {
+            timer = setTimeout(() => {
+                onComplete();
+            }, 3000);
+        }
 
         return () => {
             clearInterval(interval);
